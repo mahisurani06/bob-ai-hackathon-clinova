@@ -21,6 +21,9 @@ from .models import (
     Trial,
 )
 
+# Shared protocol constants
+from .constants import VISIT_SEQUENCE
+
 # Public API — the only import other modules need
 from .interface import (
     DataValidationError,
@@ -39,6 +42,8 @@ __all__ = [
     "Participant",
     "Observation",
     "ProtocolRule",
+    # constants
+    "VISIT_SEQUENCE",
     # interface
     "load_project_data",
     "get_trials",
