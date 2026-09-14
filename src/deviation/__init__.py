@@ -4,6 +4,11 @@
 # This package detects protocol deviations in clinical trial observations
 # and classifies each deviation by severity (Administrative / Minor / Major).
 #
+# Deviation types detected:
+#   VISIT_WINDOW  — visit outside its mandated ±window
+#   MISSING_DATA  — required visit has no recorded actual_day
+#   ELIGIBILITY   — participant age violates enrollment criterion
+#
 # Intended usage by other modules:
 #
 #     from src.deviation import detect_deviations, DeviationRecord
@@ -11,6 +16,7 @@
 #     deviations = detect_deviations(
 #         observations   = data["observations"],
 #         protocol_rules = data["protocol_rules"],
+#         participants   = data["participants"],  # optional; enables ELIGIBILITY
 #     )
 #
 # Public surface:
@@ -24,6 +30,7 @@ from .models import DeviationRecord, SeverityLevel
 # Classifier — import when you need to re-classify or inspect thresholds
 from .classifier import (
     ADMIN_MAX_OVERSHOOT,
+    DEVIATION_TYPE_SEVERITY,
     MINOR_MAX_OVERSHOOT,
     classify_severity,
 )
@@ -39,6 +46,7 @@ __all__ = [
     "classify_severity",
     "ADMIN_MAX_OVERSHOOT",
     "MINOR_MAX_OVERSHOOT",
+    "DEVIATION_TYPE_SEVERITY",
     # detector
     "detect_deviations",
 ]
