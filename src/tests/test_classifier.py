@@ -244,3 +244,153 @@ class TestSeverityMatchesThresholds:
         overshoot = MINOR_MAX_OVERSHOOT + 1
         rec = _record(difference=3 + overshoot, allowed_window=3)
         assert classify_severity(rec) == "Major"
+
+
+# ---------------------------------------------------------------------------
+# New tests — DEVIATION_TYPE_SEVERITY (ELIGIBILITY and MISSING_DATA)
+# ---------------------------------------------------------------------------
+
+from src.deviation.classifier import DEVIATION_TYPE_SEVERITY
+
+
+def _record_with_type(
+    deviation_type: str,
+    difference: int = 1,
+    allowed_window: int = 0,
+    observation_id: str = "OBS-T001",
+    patient_id: str = "P001",
+    site_id: str = "S001",
+    visit_type: str = "ENROLLMENT",
+) -> DeviationRecord:
+    """Build a DeviationRecord with a specific deviation_type for classifier tests."""
+    return DeviationRecord(
+        observation_id=observation_id,
+        patient_id=patient_id,
+        site_id=site_id,
+        visit_type=visit_type,
+        deviation_type=deviation_type,
+        expected=18,
+        actual=16,
+        difference=difference,
+        allowed_window=allowed_window,
+        severity="Administrative",   # placeholder
+        status="OPEN",
+    )
+
+
+class TestDeviationTypeSeverityConstant:
+    """The DEVIATION_TYPE_SEVERITY dict must be exported and correctly valued."""
+
+    def test_constant_is_exported(self) -> None:
+        assert DEVIATION_TYPE_SEVERITY is not None
+
+    def test_eligibility_maps_to_major(self) -> None:
+        assert DEVIATION_TYPE_SEVERITY["ELIGIBILITY"] == "Major"
+
+    def test_missing_data_maps_to_minor(self) -> None:
+        assert DEVIATION_TYPE_SEVERITY["MISSING_DATA"] == "Minor"
+
+    def test_visit_window_is_not_in_fixed_map(self) -> None:
+        """VISIT_WINDOW uses the overshoot path, not the fixed map."""
+        assert "VISIT_WINDOW" not in DEVIATION_TYPE_SEVERITY
+
+
+class TestEligibilitySeverity:
+    """ELIGIBILITY deviations must always be classified as Major."""
+
+    def test_eligibility_is_always_major(self) -> None:
+        rec = _record_with_type("ELIGIBILITY", difference=2, allowed_window=0)
+        assert classify_severity(rec) == "Major"
+
+    def test_eligibility_major_regardless_of_small_difference(self) -> None:
+        """Even a 1-year age gap on ELIGIBILITY → Major."""
+        rec = _record_with_type("ELIGIBILITY", difference=1, allowed_window=0)
+        assert classify_severity(rec) == "Major"
+
+    def test_eligibility_major_regardless_of_large_difference(self) -> None:
+        """A very large age gap on ELIGIBILITY is still Major (not a fourth level)."""
+        rec = _record_with_type("ELIGIBILITY", difference=50, allowed_window=0)
+        assert classify_severity(rec) == "Major"
+
+
+class TestMissingDataSeverity:
+    """MISSING_DATA deviations must always be classified as Minor."""
+
+    def test_missing_data_is_always_minor(self) -> None:
+        rec = _record_with_type(
+            "MISSING_DATA",
+            difference=1,
+            allowed_window=0,
+            visit_type="WEEK_4",
+        )
+        assert classify_severity(rec) == "Minor"
+
+    def test_missing_data_minor_is_independent_of_expected_day(self) -> None:
+        """Changing the expected day value does not change MISSING_DATA severity."""
+        rec = DeviationRecord(
+            observation_id="OBS-M001",
+            patient_id="P001",
+            site_id="S001",
+            visit_type="WEEK_12",
+            deviation_type="MISSING_DATA",
+            expected=84,
+            actual=-1,
+            difference=1,
+            allowed_window=0,
+            severity="Administrative",
+            status="OPEN",
+        )
+        assert classify_severity(rec) == "Minor"
+
+
+class TestVisitWindowStillUsesOvershoot:
+    """VISIT_WINDOW must still use overshoot-based thresholds, unchanged."""
+
+    def test_visit_window_small_overshoot_is_administrative(self) -> None:
+        rec = _record(difference=3 + 1, allowed_window=3)   # overshoot = 1
+        assert classify_severity(rec) == "Administrative"
+
+    def test_visit_window_medium_overshoot_is_minor(self) -> None:
+        rec = _record(difference=3 + ADMIN_MAX_OVERSHOOT + 1, allowed_window=3)
+        assert classify_severity(rec) == "Minor"
+
+    def test_visit_window_large_overshoot_is_major(self) -> None:
+        rec = _record(difference=3 + MINOR_MAX_OVERSHOOT + 1, allowed_window=3)
+        assert classify_severity(rec) == "Major"
+
+    def test_visit_window_deviation_type_explicit(self) -> None:
+        """Explicit VISIT_WINDOW deviation_type uses overshoot, not fixed map."""
+        rec = DeviationRecord(
+            observation_id="OBS-0001",
+            patient_id="P001",
+            site_id="S001",
+            visit_type="WEEK_4",
+            deviation_type="VISIT_WINDOW",
+            expected=28,
+            actual=33,    # 5 days late, window=3 → overshoot=2 → Administrative
+            difference=5,
+            allowed_window=3,
+            severity="Administrative",
+            status="OPEN",
+        )
+        assert classify_severity(rec) == "Administrative"
+
+
+class TestUnknownDeviationTypeFallback:
+    """Unknown deviation types fall back to overshoot-based classification (safe default)."""
+
+    def test_unknown_type_small_overshoot_is_administrative(self) -> None:
+        rec = _record_with_type(
+            "FUTURE_RULE_TYPE",
+            difference=3 + 1,    # overshoot=1 with window=3
+            allowed_window=3,
+        )
+        assert classify_severity(rec) == "Administrative"
+
+    def test_unknown_type_large_overshoot_is_major(self) -> None:
+        rec = _record_with_type(
+            "FUTURE_RULE_TYPE",
+            difference=3 + MINOR_MAX_OVERSHOOT + 5,
+            allowed_window=3,
+        )
+        assert classify_severity(rec) == "Major"
