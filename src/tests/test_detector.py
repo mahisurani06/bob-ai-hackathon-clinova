@@ -285,15 +285,16 @@ class TestMixedObservations:
 # Tests — integration with Member 1's live data
 # ---------------------------------------------------------------------------
 
+@pytest.fixture(scope="class")
+def live_deviations() -> list[DeviationRecord]:
+    """Load the real dataset and run detection once for the whole class."""
+    from src.protocol.interface import load_project_data
+    data = load_project_data()
+    return detect_deviations(data["observations"], data["protocol_rules"])
+
+
 class TestWithLiveData:
     """Run the detector against the actual generated dataset."""
-
-    @pytest.fixture(scope="class")
-    def live_deviations(self) -> list[DeviationRecord]:
-        """Load the real dataset and run detection once for the whole class."""
-        from src.protocol.interface import load_project_data
-        data = load_project_data()
-        return detect_deviations(data["observations"], data["protocol_rules"])
 
     def test_returns_a_list(self, live_deviations) -> None:
         assert isinstance(live_deviations, list)
