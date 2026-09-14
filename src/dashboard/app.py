@@ -44,6 +44,12 @@ from src.risk.scorer    import VISIT_SEQUENCE
 from src.deviation.detector import detect_deviations
 from src.protocol.interface import load_project_data
 
+# Member 4 — AI Advisor & CAPA module
+from src.ai.explainer import explain_site_risk
+from src.ai.capa      import generate_capa
+from src.ai.report    import build_report
+from src.ai.watsonx   import watsonx_available
+
 
 # ---------------------------------------------------------------------------
 # Page configuration
@@ -1387,15 +1393,343 @@ st.plotly_chart(fig_multi, width="stretch")
 
 
 # ---------------------------------------------------------------------------
+# G. AI Advisor — Member 4
+# ---------------------------------------------------------------------------
+
+st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
+st.markdown('<p class="section-title">AI Advisor</p>', unsafe_allow_html=True)
+
+# ── G0. watsonx status pill + cached deviation loader ────────────────────
+
+@st.cache_data(ttl=300)
+def _load_all_deviations() -> list:
+    """Return all DeviationRecord objects for the full dataset (cached)."""
+    data = load_project_data()
+    return detect_deviations(
+        observations   = data["observations"],
+        protocol_rules = data["protocol_rules"],
+    )
+
+try:
+    _all_deviations = _load_all_deviations()
+except Exception:
+    _all_deviations = []
+
+_wx_on = watsonx_available()
+_wx_pill_bg  = "rgba(22,163,74,0.12)"    if _wx_on else "rgba(100,116,139,0.10)"
+_wx_pill_bdr = "rgba(22,163,74,0.35)"    if _wx_on else "rgba(100,116,139,0.28)"
+_wx_pill_clr = "#16a34a"                 if _wx_on else "#64748b"
+_wx_pill_dot = "#4ade80"                 if _wx_on else "#94a3b8"
+_wx_pill_lbl = "IBM watsonx.ai &nbsp;·&nbsp; Connected" if _wx_on \
+               else "IBM watsonx.ai &nbsp;·&nbsp; Template mode (credentials not configured)"
+st.markdown(
+    f'<span style="display:inline-flex;align-items:center;gap:7px;'
+    f'padding:4px 14px;border-radius:20px;font-size:0.78rem;font-weight:600;'
+    f'background:{_wx_pill_bg};border:1px solid {_wx_pill_bdr};color:{_wx_pill_clr}">'
+    f'<span style="width:8px;height:8px;border-radius:50%;'
+    f'background:{_wx_pill_dot};flex-shrink:0"></span>'
+    f'{_wx_pill_lbl}</span>',
+    unsafe_allow_html=True,
+)
+
+# ── G1. All-sites risk snapshot (one KPI card per site) ──────────────────
+
+st.markdown("<div style='height:0.75rem'></div>", unsafe_allow_html=True)
+
+_snap_cols = st.columns(len(scores), gap="small")
+for _sc, _s in zip(_snap_cols, scores):
+    _sc_colour = LEVEL_COLOURS.get(_s.risk_level, _C_TEXT)
+    _tc = TREND_ICONS.get(_s.trend, "")
+    with _sc:
+        st.markdown(
+            f'<div class="kpi-box" style="--kpi-accent:{_sc_colour};cursor:default">'
+            f'  <div style="display:flex;justify-content:space-between;'
+            f'              align-items:flex-start;margin-bottom:4px">'
+            f'    <span style="font-size:0.72rem;font-weight:700;color:{_C_MUTED};'
+            f'                 letter-spacing:0.06em;text-transform:uppercase">'
+            f'      {_s.site_id}</span>'
+            f'    <span class="badge" style="background:{_sc_colour};color:#fff;'
+            f'                               font-size:0.65rem">{_s.risk_level}</span>'
+            f'  </div>'
+            f'  <div class="kpi-val" style="color:{_sc_colour};font-size:1.7rem">'
+            f'    {_s.risk_score:.0f}'
+            f'    <span style="font-size:0.8rem;font-weight:500;color:{_C_MUTED}">/100</span>'
+            f'  </div>'
+            f'  <div class="kpi-lbl" style="margin-top:2px">'
+            f'    {_tc}&nbsp;{_s.trend}'
+            f'  </div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+
+st.markdown("<div style='height:0.75rem'></div>", unsafe_allow_html=True)
+
+# ── G2. Site selector ─────────────────────────────────────────────────────
+
+_ai_site_options = [s.site_id for s in scores]
+_ai_sel = st.selectbox(
+    "Select site to analyse",
+    options=_ai_site_options,
+    index=0,
+    key="ai_site_sel",
+    help="Choose a site to see its AI-generated risk explanation and CAPA recommendations.",
+)
+
+_ai_score    = next((s for s in scores if s.site_id == _ai_sel), None)
+_ai_site_devs = [d for d in _all_deviations if d.site_id == _ai_sel]
+
+if _ai_score is None:
+    st.info("No risk data available for the selected site.")
+else:
+    # Run AI pipeline — both calls are fast (deterministic template; no network)
+    with st.spinner("Generating AI analysis …"):
+        _explanation = explain_site_risk(_ai_score, _ai_site_devs)
+        _capas        = generate_capa(_ai_score, _ai_site_devs)
+
+    _lvl_col = LEVEL_COLOURS.get(_ai_score.risk_level, _C_TEXT)
+
+    # ── Zone A: Risk snapshot + AI explanation (side-by-side) ────────────
+    _za_left, _za_right = st.columns([5, 7], gap="medium")
+
+    # Zone A-left: site risk level, score, key risk factors
+    with _za_left:
+        _score_pct = min(100.0, max(0.0, _ai_score.risk_score))
+        st.markdown(
+            f"""
+            <div class="detail-panel" style="height:100%">
+              <p class="detail-label">Site</p>
+              <p class="detail-site-id" style="margin-bottom:12px">{_ai_score.site_id}</p>
+
+              <p class="detail-label">Risk Level</p>
+              <div style="margin-bottom:12px">{_risk_badge(_ai_score.risk_level)}</div>
+
+              <p class="detail-label">Risk Score</p>
+              <div style="margin-bottom:4px">
+                <span class="score-display" style="color:{_lvl_col};font-size:2.4rem">
+                  {_ai_score.risk_score:.1f}
+                </span>
+                <span class="score-denom">/100</span>
+              </div>
+              <div class="score-bar-wrap" style="margin-bottom:12px">
+                <div class="score-bar-fill"
+                     style="width:{_score_pct:.1f}%;background:{_lvl_col}"></div>
+              </div>
+
+              <p class="detail-label">Trend</p>
+              <div style="margin-bottom:12px">{_trend_badge(_ai_score.trend)}</div>
+
+              <p class="detail-label">Deviation Counts</p>
+              <div class="metric-grid" style="margin-bottom:4px">
+                <div class="metric-block">
+                  <div class="m-label">Major</div>
+                  <div class="m-val">{_ai_score.major_deviations}</div>
+                </div>
+                <div class="metric-block">
+                  <div class="m-label">Minor</div>
+                  <div class="m-val">{_ai_score.minor_deviations}</div>
+                </div>
+                <div class="metric-block">
+                  <div class="m-label">Admin</div>
+                  <div class="m-val">{_ai_score.administrative_deviations}</div>
+                </div>
+                <div class="metric-block">
+                  <div class="m-label">Open</div>
+                  <div class="m-val">{_ai_score.open_deviations}</div>
+                </div>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    # Zone A-right: AI explanation
+    with _za_right:
+        _ai_src = "IBM watsonx.ai" if _explanation.ai_enhanced else "Template engine"
+        # Key risk factors: use top_risk_drivers from Member 3 directly
+        _drivers_html = ""
+        if _ai_score.top_risk_drivers:
+            for _i, _drv in enumerate(_ai_score.top_risk_drivers, 1):
+                _row_cls = "driver-row major" if "Major" in _drv else "driver-row"
+                _drivers_html += (
+                    f'<div class="{_row_cls}">'
+                    f'<div class="driver-num">{_i:02d}</div>'
+                    f'<div class="driver-text">{_drv}</div>'
+                    f'</div>'
+                )
+        else:
+            _drivers_html = (
+                f'<p style="font-size:0.84rem;color:{_C_MUTED};margin:0">'
+                f'No risk drivers — site has no recorded deviations.</p>'
+            )
+
+        # Evidence points from explainer
+        _evidence_html = "".join(
+            f"<li style='margin-bottom:4px'>{pt}</li>"
+            for pt in _explanation.evidence_points
+        )
+
+        st.markdown(
+            f"""
+            <div class="detail-panel">
+              <div style="display:flex;justify-content:space-between;
+                          align-items:center;margin-bottom:12px">
+                <p class="detail-label" style="margin:0">AI Risk Explanation</p>
+                <span style="font-size:0.72rem;color:{_C_MUTED}">{_ai_src}</span>
+              </div>
+
+              <p style="font-size:0.9rem;line-height:1.65;color:{_C_TEXT};
+                        margin:0 0 14px">{_explanation.summary}</p>
+
+              <div class="drivers-section" style="padding-top:10px;margin-top:0">
+                <p class="drivers-label">Key Risk Factors</p>
+                {_drivers_html}
+              </div>
+
+              <div style="margin-top:14px;padding-top:12px;
+                          border-top:1px solid {_C_BORDER}">
+                <p class="detail-label" style="margin-bottom:6px">Evidence Points</p>
+                <ul style="margin:0;padding-left:1.2rem;font-size:0.83rem;
+                           line-height:1.7;color:{_C_TEXT}">
+                  {_evidence_html}
+                </ul>
+              </div>
+
+              <div style="margin-top:14px;padding-top:12px;
+                          border-top:1px solid {_C_BORDER}">
+                <p class="detail-label" style="margin-bottom:4px">
+                  Recommended Next Action
+                </p>
+                <p style="font-size:0.86rem;font-weight:600;
+                          color:{_lvl_col};margin:0;line-height:1.5">
+                  {_explanation.recommendation_headline}
+                </p>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("<div style='height:0.75rem'></div>", unsafe_allow_html=True)
+
+    # ── Zone B: CAPA recommendations ─────────────────────────────────────
+    st.markdown('<p class="section-title">CAPA Recommendations</p>', unsafe_allow_html=True)
+
+    _prio_colours: dict[str, str] = {
+        "Critical": _C_CRITICAL,
+        "High":     _C_HIGH,
+        "Medium":   _C_MEDIUM,
+        "Low":      _C_LOW,
+    }
+
+    if not _capas:
+        st.markdown(
+            f"""
+            <div class="detail-panel" style="text-align:center;padding:28px 24px">
+              <p style="font-size:1.6rem;margin:0 0 6px">&#10003;</p>
+              <p class="detail-label" style="margin-bottom:5px">No CAPA Required</p>
+              <p style="font-size:0.87rem;color:{_C_MUTED};margin:0">
+                Site {_ai_sel} is classified as {_ai_score.risk_level} risk
+                with no actionable deviations.
+              </p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    else:
+        # Render CAPAs two-per-row so each card stays readable
+        _capa_pairs = [_capas[i:i+2] for i in range(0, len(_capas), 2)]
+        for _pair in _capa_pairs:
+            _pair_cols = st.columns(len(_pair), gap="medium")
+            for _col, _c in zip(_pair_cols, _pair):
+                _pc = _prio_colours.get(_c.priority, _C_MUTED)
+                _lc = LEVEL_COLOURS.get(_c.risk_level, _C_MUTED)
+                with _col:
+                    st.markdown(
+                        f"""
+                        <div class="detail-panel" style="height:100%">
+                          <div style="display:flex;justify-content:space-between;
+                                      align-items:flex-start;margin-bottom:10px">
+                            <span style="font-size:0.73rem;font-weight:700;
+                                         color:{_C_MUTED};letter-spacing:0.05em">
+                              {_c.capa_id}
+                            </span>
+                            <div style="display:flex;gap:5px;flex-wrap:wrap;
+                                        justify-content:flex-end">
+                              <span class="badge"
+                                    style="background:{_pc};color:#fff">
+                                {_c.priority}
+                              </span>
+                              <span class="badge"
+                                    style="background:{_lc};color:#fff">
+                                {_c.risk_level}
+                              </span>
+                            </div>
+                          </div>
+                          <div style="margin-bottom:10px">
+                            <span style="font-size:0.72rem;font-weight:600;
+                                         color:{_C_MUTED};text-transform:uppercase;
+                                         letter-spacing:0.05em">Severity&nbsp;</span>
+                            <span style="font-size:0.78rem;font-weight:700;
+                                         color:{_pc}">{_c.severity}</span>
+                          </div>
+                          <p class="detail-label" style="margin-bottom:2px">
+                            Issue / Deviation
+                          </p>
+                          <p style="font-size:0.83rem;color:{_C_TEXT};
+                                    line-height:1.55;margin:0 0 10px">{_c.issue}</p>
+                          <p class="detail-label"
+                             style="margin-bottom:2px;color:{_C_CRITICAL}">
+                            &#9654; Corrective Action
+                          </p>
+                          <p style="font-size:0.83rem;color:{_C_TEXT};
+                                    line-height:1.55;margin:0 0 10px">
+                            {_c.corrective_action}
+                          </p>
+                          <p class="detail-label"
+                             style="margin-bottom:2px;color:{_C_DEC}">
+                            &#9654; Preventive Action
+                          </p>
+                          <p style="font-size:0.83rem;color:{_C_TEXT};
+                                    line-height:1.55;margin:0 0 10px">
+                            {_c.preventive_action}
+                          </p>
+                          <div style="background:#f8fafc;border:1px solid {_C_BORDER};
+                                      border-radius:5px;padding:8px 12px">
+                            <p class="detail-label" style="margin-bottom:2px">
+                              Rationale
+                            </p>
+                            <p style="font-size:0.79rem;color:{_C_MUTED};margin:0;
+                                      line-height:1.5">{_c.rationale}</p>
+                          </div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+            st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
+
+    # ── Zone C: download button ───────────────────────────────────────────
+    st.markdown("<div style='height:0.25rem'></div>", unsafe_allow_html=True)
+    _report_md = build_report(_ai_score, _ai_site_devs, _explanation, _capas)
+    st.download_button(
+        label               = f"Download CAPA Report — {_ai_sel}  (.md)",
+        data                = _report_md.encode("utf-8"),
+        file_name           = f"capa_report_{_ai_sel}.md",
+        mime                = "text/markdown",
+        use_container_width = True,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Footer
 # ---------------------------------------------------------------------------
 
 st.markdown(
     f"""
     <div class="dash-footer">
-      Clinical Trial Risk Monitor &nbsp;·&nbsp; Member 3 &nbsp;·&nbsp; IBM Hackathon<br>
+      Clinical Trial Risk Monitor &nbsp;·&nbsp; Members 1–4 &nbsp;·&nbsp; IBM Hackathon<br>
       Data: synthetic prototype (seed=42 · 20 patients · 4 sites) &nbsp;·&nbsp;
-      Risk engine: <code>src.risk</code> &nbsp;·&nbsp; No calendar timestamps used
+      Risk engine: <code>src.risk</code> &nbsp;·&nbsp;
+      AI Advisor: <code>src.ai</code> &nbsp;·&nbsp; No calendar timestamps used
     </div>
     </div><!-- /#dash-root -->
     """,

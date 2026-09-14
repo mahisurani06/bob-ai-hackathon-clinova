@@ -64,6 +64,7 @@ for p in participants:
         observations.append(dict(
             observation_id=f"OBS-{obs_id:04d}",
             patient_id=p["patient_id"],
+            site_id=p["site_id"],
             visit_type=visit_type,
             expected_day=expected_day,
             actual_day=actual_day,
@@ -123,16 +124,16 @@ write_csv(SYNTHETIC_DIR / "participants.csv", participants,
           ["patient_id", "site_id", "age", "gender", "enrollment_date", "status"])
 
 write_csv(SYNTHETIC_DIR / "observations.csv", observations,
-          ["observation_id", "patient_id", "visit_type",
+          ["observation_id", "patient_id", "site_id", "visit_type",
            "expected_day", "actual_day", "is_anomaly"])
 
 SCHEMAS_DIR.mkdir(parents=True, exist_ok=True)
 with open(SCHEMAS_DIR / "protocol_rules.json", "w") as f:
     json.dump(PROTOCOL_RULES, f, indent=2)
 
-print(f"✓ sites.csv          ({len(SITES)} rows)")
-print(f"✓ trials.csv         (1 row)")
-print(f"✓ participants.csv   ({len(participants)} rows)")
-print(f"✓ observations.csv   ({len(observations)} rows)")
-print(f"✓ protocol_rules.json (8 rules)")
+print(f"[OK] sites.csv          ({len(SITES)} rows)")
+print(f"[OK] trials.csv         (1 row)")
+print(f"[OK] participants.csv   ({len(participants)} rows)")
+print(f"[OK] observations.csv   ({len(observations)} rows)")
+print(f"[OK] protocol_rules.json (8 rules)")
 print("\nAll files written to bob-ai-hackathon-clinova/src/data/")
