@@ -1,0 +1,5 @@
+site_id,trial_id,site_name,country,status
+S001,TRIAL-001,Apollo Hospitals Chennai,India,ACTIVE
+S002,TRIAL-001,Fortis Memorial Research Inst.,India,ACTIVE
+S003,TRIAL-001,AIIMS New Delhi,India,ACTIVE
+S004,TRIAL-001,Narayana Health Bangalore,India,ACTIVE
