@@ -1,12 +1,12 @@
-# 🚀 CliNova — Clinical Trial Risk Monitor & Protocol Deviation Detector
+# 🏥 CliNova — Clinical Trial Risk Monitor & Protocol Deviation Detector
 
-> **An AI-powered platform for detecting clinical trial protocol deviations, assessing severity and site-level risk, and generating actionable CAPA recommendations.**
+> **AI-powered clinical trial monitoring system that detects protocol deviations, classifies their severity, evaluates site-level risk, and generates CAPA-ready recommendations.**
 
 ---
 
 ## 👥 Team
 
-| Field         | Value                                             |
+| **Field**     | **Value**                                         |
 | ------------- | ------------------------------------------------- |
 | **Team Name** | **CliNova**                                       |
 | **Track**     | **AI**                                            |
@@ -17,54 +17,56 @@
 
 ## 🎯 Problem Statement
 
-Clinical trial teams must continuously monitor participant data to ensure that visits, eligibility criteria, dosing activities, laboratory observations, and other clinical activities comply with the approved study protocol. Manual monitoring is time-consuming and can make it difficult to identify important deviations and high-risk clinical sites quickly.
+Clinical trial teams must continuously verify that participant activities, visits, laboratory observations, eligibility criteria, and dosing events follow the approved study protocol. Manual monitoring is time-consuming and makes it difficult to identify recurring deviations and high-risk clinical sites early.
 
-**CliNova** addresses this challenge by automatically comparing clinical trial data against structured protocol rules, detecting deviations, classifying their severity, and identifying site-level risk.
+**CliNova** addresses this problem by automatically comparing structured clinical trial data against protocol-defined rules, identifying deviations, classifying their severity, and providing actionable risk and remediation insights.
 
 ---
 
 ## 💡 Solution
 
-**CliNova** is an end-to-end clinical trial risk monitoring platform that converts protocol requirements into structured, machine-checkable rules and validates clinical trial data against those rules.
+**CliNova** is an AI-powered clinical trial risk monitoring platform that transforms protocol requirements and clinical observations into structured, machine-checkable rules. The system automatically detects deviations such as missed or delayed visits, eligibility violations, dosing issues, and laboratory-related deviations.
 
-The platform detects protocol deviations, evaluates their severity, calculates site-level risk scores, and uses IBM AI capabilities to provide understandable explanations and CAPA-oriented recommendations for remediation.
+Detected deviations are classified by severity and aggregated into site-level risk scores. IBM AI capabilities are then used to generate understandable explanations and CAPA-oriented recommendations, helping clinical operations teams prioritize the issues that require attention.
 
 ---
 
 ## ✨ Key Features
 
-* **Protocol Rule Engine:** Represents clinical trial requirements as structured rules containing expected values, acceptable windows, and validation conditions.
+* **Protocol Rule Engine:** Converts clinical trial protocol requirements into structured rules containing expected values, acceptable windows, and validation conditions.
 
-* **Clinical Data Validation:** Validates trial, site, participant, observation, and protocol data before processing.
+* **Clinical Data Validation:** Validates trials, sites, participants, observations, and protocol rules before they enter the monitoring pipeline.
 
-* **Automated Protocol Deviation Detection:** Identifies issues such as delayed visits, eligibility violations, dosing deviations, and laboratory-related deviations.
+* **Automated Protocol Deviation Detection:** Compares participant clinical events against protocol-defined visit windows, eligibility requirements, dosing schedules, and laboratory requirements.
 
-* **Deviation Severity Classification:** Categorizes detected deviations according to their potential impact and priority.
+* **Deviation Severity Classification:** Categorizes detected deviations according to their potential impact and helps prioritize critical issues.
 
-* **Site Risk Scoring:** Aggregates deviation information to calculate and monitor risk at the clinical-site level.
+* **Site-Level Risk Scoring:** Aggregates deviation patterns to calculate risk scores for individual clinical sites.
 
-* **IBM AI-Powered Explanations:** Generates human-readable explanations for detected risks and deviations.
+* **AI-Powered Explanations:** Uses IBM AI capabilities to explain detected risks in a human-readable form rather than presenting only raw rule violations.
 
-* **CAPA Recommendations:** Provides corrective and preventive action recommendations based on identified issues.
+* **CAPA Recommendations:** Generates corrective and preventive action recommendations for identified deviations and risk patterns.
 
-* **Risk Monitoring Dashboard:** Presents deviations, severity, site risk, and AI-generated insights through an interactive dashboard.
+* **CAPA-Ready Reporting:** Produces structured information that can support clinical operations teams during investigation and remediation.
 
-* **Synthetic Clinical Trial Data:** Provides reproducible trial, site, participant, observation, and protocol-rule data for testing and demonstration.
+* **Synthetic Clinical Trial Dataset:** Includes reproducible synthetic trials, sites, participants, observations, and protocol rules for demonstration and testing.
+
+* **Interactive Risk Dashboard:** Provides a centralized view of deviations, severity, site-level risk, and AI-generated insights.
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Category             | Technologies                                   |
-| -------------------- | ---------------------------------------------- |
-| **Languages**        | Python                                         |
-| **Frameworks**       | Streamlit, Pydantic                            |
-| **AI / ML**          | IBM watsonx.ai, rule-based clinical monitoring |
-| **IBM Technologies** | IBM Bob, IBM watsonx.ai                        |
-| **Data Formats**     | JSON, CSV                                      |
-| **Testing**          | Pytest                                         |
-| **CI/CD**            | GitHub Actions                                 |
-| **Version Control**  | Git, GitHub                                    |
+| **Category**         | **Technologies**                                                              |
+| -------------------- | ----------------------------------------------------------------------------- |
+| **Languages**        | Python                                                                        |
+| **Frameworks**       | Streamlit, Pydantic, Pytest                                                   |
+| **IBM Technologies** | IBM Bob, IBM watsonx.ai                                                       |
+| **AI / ML**          | IBM AI integration, rule-based clinical monitoring, AI-generated explanations |
+| **Data Processing**  | Python, CSV, JSON                                                             |
+| **Testing**          | Pytest                                                                        |
+| **CI/CD**            | GitHub Actions                                                                |
+| **Version Control**  | Git, GitHub                                                                   |
 
 ---
 
@@ -74,6 +76,13 @@ The platform detects protocol deviations, evaluates their severity, calculates s
 ├── .github/
 │   └── workflows/
 │       └── validate.yml
+│
+├── docs/
+│   ├── architecture.md
+│   ├── problem-statement.md
+│   ├── setup-guide.md
+│   ├── solution-overview.md
+│   └── template-guide.md
 │
 ├── src/
 │   ├── ai/
@@ -103,13 +112,8 @@ The platform detects protocol deviations, evaluates their severity, calculates s
 │   ├── risk/
 │   │   └── scorer.py
 │   │
-│   └── tests/
-│
-├── docs/
-│   ├── problem-statement.md
-│   ├── solution-overview.md
-│   ├── architecture.md
-│   └── setup-guide.md
+│   ├── tests/
+│   └── requirements.txt
 │
 ├── demo/
 │   ├── screenshots/
@@ -125,85 +129,16 @@ The platform detects protocol deviations, evaluates their severity, calculates s
 
 ---
 
-## ⚡ How to Run
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/mahisurani06/bob-ai-hackathon-clinova.git
-cd bob-ai-hackathon-clinova
-```
-
-### 2. Create a virtual environment
-
-```bash
-python -m venv .venv
-```
-
-### 3. Activate the virtual environment
-
-**Windows PowerShell:**
-
-```powershell
-.venv\Scripts\Activate.ps1
-```
-
-### 4. Install dependencies
-
-```bash
-pip install -r src/requirements.txt
-```
-
-### 5. Generate the synthetic clinical dataset
-
-```bash
-python generate_data.py
-```
-
-### 6. Configure environment variables
-
-Copy the environment template:
-
-```powershell
-Copy-Item src\.env.example src\.env
-```
-
-Add the required IBM/watsonx configuration to `src/.env`.
-
-> **Do not commit API keys, tokens, or other secrets to GitHub.**
-
-### 7. Start the application
-
-```bash
-streamlit run src/dashboard/app.py
-```
-
-The CliNova dashboard will then be available through the local Streamlit URL displayed in the terminal.
-
----
-
-## 🧪 Testing
-
-Run the complete automated test suite:
-
-```bash
-pytest
-```
-
-The repository also includes GitHub Actions validation to automatically check the project.
-
----
-
-## 🔄 System Workflow
+## 🔄 How CliNova Works
 
 ```text
 Clinical Trial Protocol
           │
           ▼
-    Protocol Rules
+   Protocol Rules
           │
           ▼
-   Clinical Trial Data
+ Synthetic / Clinical Data
           │
           ▼
     Data Validation
@@ -227,40 +162,158 @@ Clinical Trial Protocol
     Risk Dashboard
 ```
 
+The architecture separates **data preparation, protocol validation, deviation detection, risk scoring, and AI assistance**, making the monitoring pipeline easier to test, maintain, and extend.
+
+---
+
+## ⚡ How to Run
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/mahisurani06/bob-ai-hackathon-clinova.git
+cd bob-ai-hackathon-clinova
+```
+
+### 2. Create a virtual environment
+
+```bash
+python -m venv .venv
+```
+
+### 3. Activate the environment
+
+**Windows PowerShell:**
+
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+**Windows CMD:**
+
+```cmd
+.venv\Scripts\activate
+```
+
+### 4. Install dependencies
+
+```bash
+pip install -r src/requirements.txt
+```
+
+### 5. Generate the synthetic clinical dataset
+
+```bash
+python generate_data.py
+```
+
+The generated dataset contains structured information for:
+
+* Clinical trial
+* Clinical sites
+* Participants
+* Clinical observations
+* Protocol rules
+
+### 6. Configure IBM AI credentials
+
+Copy the environment template:
+
+```powershell
+Copy-Item src\.env.example src\.env
+```
+
+Then configure the required IBM/watsonx credentials in `src/.env`.
+
+> **Never commit API keys, access tokens, or other credentials to GitHub.**
+
+### 7. Start the dashboard
+
+From the repository root:
+
+```bash
+streamlit run src/dashboard/app.py
+```
+
+The Streamlit dashboard will open in your browser.
+
+---
+
+## 🧪 Testing
+
+CliNova includes automated tests covering the major components of the monitoring pipeline.
+
+Run the complete test suite with:
+
+```bash
+pytest
+```
+
+The project also uses GitHub Actions to validate the repository automatically.
+
 ---
 
 ## 🖥️ Demo
 
-| Artifact            | Link                                                     |
-| ------------------- | -------------------------------------------------------- |
-| 📹 **Demo Video**   | [See demo/demo-video-link.txt](demo/demo-video-link.txt) |
-| 🌐 **Live Demo**    | [See demo/live-demo-url.txt](demo/live-demo-url.txt)     |
-| 🖼️ **Screenshots** | [See demo/screenshots/](demo/screenshots/)               |
-| 📊 **Presentation** | [See presentation/](presentation/)                       |
+| **Artifact**        | **Link**                                                   |
+| ------------------- | ---------------------------------------------------------- |
+| 📹 **Demo Video**   | [See `demo/demo-video-link.txt`](demo/demo-video-link.txt) |
+| 🌐 **Live Demo**    | [See `demo/live-demo-url.txt`](demo/live-demo-url.txt)     |
+| 🖼️ **Screenshots** | [See `demo/screenshots/`](demo/screenshots/)               |
+| 📊 **Presentation** | [See `presentation/`](presentation/)                       |
+
+---
+
+## 📊 Example Monitoring Scenario
+
+Consider a participant whose Week 4 visit is expected around **Day 28**, with an allowed protocol window of ±3 days.
+
+```text
+Protocol:
+Week 4 Visit
+Expected Day: 28
+Allowed Window: ±3 days
+
+Participant Event:
+Actual Day: 35
+
+Result:
+Deviation Detected
+        │
+        ▼
+Severity Assessment
+        │
+        ▼
+Site Risk Updated
+        │
+        ▼
+AI Explanation
+        │
+        ▼
+CAPA Recommendation
+```
+
+This allows the system to move beyond simply saying **"a deviation occurred"** and instead provide information that can help a clinical operations team understand and respond to the issue.
+
+---
+
+## 🔐 Data & Security Considerations
+
+* The demonstration dataset is **synthetic** and does not contain real patient information.
+* Credentials and API keys are kept outside the source code through environment configuration.
+* Protocol and clinical data are validated before processing.
+* The architecture separates clinical data processing from AI-assisted explanation and reporting.
+* The system is intended as a **clinical trial monitoring support tool**, not as a replacement for qualified clinical, regulatory, or medical decision-making.
 
 ---
 
 ## ⚠️ Known Limitations
 
-* The current demonstration uses **synthetic clinical trial data** rather than real patient records.
-* The current protocol engine supports structured protocol rules rather than automatically converting every type of natural-language clinical protocol into machine-readable rules.
-* AI-generated explanations and CAPA recommendations should be reviewed by qualified clinical personnel before being used for real clinical or regulatory decisions.
-* The system is a **clinical trial monitoring and decision-support platform** and does not replace formal clinical oversight.
-* A production deployment would require additional enterprise capabilities such as authentication, role-based access control, audit logging, secure infrastructure, and compliance controls.
-
----
-
-## 🏅 What We're Most Proud Of
-
-The strongest aspect of **CliNova** is that it provides an end-to-end clinical trial monitoring workflow rather than treating protocol deviation detection as an isolated feature.
-
-Our complete pipeline connects:
-
-**Protocol → Structured Rules → Clinical Data → Validation → Deviation Detection → Severity → Site Risk → IBM AI Explanation → CAPA Recommendations**
-
-This allows clinical operations teams to move from simply identifying a protocol violation to understanding **what happened, how serious it is, where risk is concentrated, and what corrective or preventive action can be considered**.
-
-We are particularly proud of combining a deterministic rule-based foundation with IBM AI-assisted explanations and recommendations, providing both structured validation and human-readable insights.
+* The current demonstration uses **synthetic clinical trial data** rather than real-world patient records.
+* Protocol rules currently represent a structured subset of possible clinical trial requirements; arbitrary natural-language protocols are not yet fully converted automatically into machine-readable rules.
+* AI-generated explanations and CAPA recommendations should be reviewed by qualified clinical operations personnel before being used for real decisions.
+* The current system is a monitoring and decision-support platform and does not replace formal clinical trial oversight, regulatory review, or human investigation.
+* Production deployment would require additional enterprise capabilities such as role-based access control, audit trails, secure database infrastructure, monitoring, and compliance controls.
 
 ---
 
@@ -268,9 +321,9 @@ We are particularly proud of combining a deterministic rule-based foundation wit
 
 * Natural-language protocol ingestion using AI.
 * Integration with real clinical trial data sources and EDC systems.
-* Predictive site-risk analysis using historical deviation patterns.
-* Advanced trend detection for recurring deviations.
-* Role-based dashboards for investigators and clinical operations teams.
+* Advanced trend detection for recurring site-level deviations.
+* Historical risk analysis and predictive site-risk modeling.
+* Role-based dashboards for investigators, monitors, and clinical operations teams.
 * Comprehensive audit logging.
 * Enterprise authentication and authorization.
 * Exportable regulatory and compliance reports.
@@ -278,14 +331,28 @@ We are particularly proud of combining a deterministic rule-based foundation wit
 
 ---
 
-## 📄 Documentation
+## 🏅 What We're Most Proud Of
 
-Detailed documentation is available in the `docs/` directory:
+**CliNova connects the complete clinical trial monitoring workflow instead of treating deviation detection as an isolated feature.**
 
-* [Problem Statement](docs/problem-statement.md)
-* [Solution Overview](docs/solution-overview.md)
-* [Architecture](docs/architecture.md)
-* [Setup Guide](docs/setup-guide.md)
+Our strongest aspect is the end-to-end pipeline:
+
+**Protocol → Structured Rules → Clinical Data → Validation → Deviation Detection → Severity → Site Risk → IBM AI Explanation → CAPA Recommendations**
+
+This architecture makes the system actionable: instead of overwhelming clinical teams with raw protocol violations, CliNova helps identify **which issues matter, where risk is concentrated, why the issue occurred, and what corrective or preventive action can be considered.**
+
+We are particularly proud of combining deterministic protocol validation with AI-assisted explanation, allowing the system to maintain a clear rule-based foundation while using AI where human-readable interpretation and remediation guidance add value.
+
+---
+
+## 📄 Project Documentation
+
+Detailed project documentation is available in the `docs/` directory:
+
+* [`problem-statement.md`](docs/problem-statement.md) — Problem definition and motivation
+* [`solution-overview.md`](docs/solution-overview.md) — Solution and workflow
+* [`architecture.md`](docs/architecture.md) — System architecture and component interactions
+* [`setup-guide.md`](docs/setup-guide.md) — Installation and execution instructions
 
 ---
 
@@ -293,4 +360,10 @@ Detailed documentation is available in the `docs/` directory:
 
 **CliNova** was developed by a four-member team for the **IBM Bob AI Hackathon — AI Track**.
 
-The team combines protocol and clinical-data engineering, deviation detection, risk analytics, dashboard development, and IBM AI integration to deliver an end-to-end clinical trial monitoring solution.
+We combined protocol/data engineering, deviation detection, risk analytics, dashboard development, and IBM AI integration to build an end-to-end clinical trial monitoring solution.
+
+---
+
+## 📜 License
+
+This project was created as part of the IBM Bob AI Hackathon.
