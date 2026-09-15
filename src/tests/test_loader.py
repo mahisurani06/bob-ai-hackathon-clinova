@@ -118,9 +118,15 @@ class TestLoadParticipants:
             )
 
     def test_ages_within_valid_range(self) -> None:
-        """Pydantic constraint: age must be 18–99."""
+        """Pydantic constraint: age must be 0–120 (data-quality bounds)."""
         for p in load_participants():
-            assert 18 <= p.age <= 99, f"Age out of range for {p.patient_id}: {p.age}"
+            assert 0 <= p.age <= 120, f"Age out of range for {p.patient_id}: {p.age}"
+
+    def test_participants_have_trial_id(self) -> None:
+        """Every participant must have a non-empty trial_id."""
+        for p in load_participants():
+            assert isinstance(p.trial_id, str)
+            assert len(p.trial_id) > 0
 
     def test_gender_values_are_valid(self) -> None:
         valid_genders = {"MALE", "FEMALE", "OTHER"}
@@ -169,18 +175,20 @@ class TestLoadObservations:
             encoding="utf-8",
         )
         (syn_dir / "sites.csv").write_text(
-            "site_id,site_name,country,status\nS001,Test Site,India,ACTIVE\n",
+            "site_id,trial_id,site_name,country,status\n"
+            "S001,TRIAL-001,Test Site,India,ACTIVE\n",
             encoding="utf-8",
         )
         (syn_dir / "participants.csv").write_text(
-            "patient_id,site_id,age,gender,enrollment_date,status\n"
-            "P001,S001,30,MALE,2023-01-01,ENROLLED\n",
+            "patient_id,trial_id,site_id,age,gender,enrollment_date,status\n"
+            "P001,TRIAL-001,S001,30,MALE,2023-01-01,ENROLLED\n",
             encoding="utf-8",
         )
-        # observation with an empty actual_day cell
+        # observation with an empty actual_day cell (and empty optional columns)
         (syn_dir / "observations.csv").write_text(
-            "observation_id,patient_id,site_id,visit_type,expected_day,actual_day\n"
-            "OBS-0001,P001,S001,BASELINE,0,\n",
+            "observation_id,trial_id,patient_id,site_id,visit_type,expected_day,"
+            "actual_day,dose_mg,lab_value,lab_unit\n"
+            "OBS-0001,TRIAL-001,P001,S001,BASELINE,0,,,,\n",
             encoding="utf-8",
         )
 
@@ -192,6 +200,46 @@ class TestLoadObservations:
         for obs in load_observations():
             assert isinstance(obs.visit_type, str)
             assert len(obs.visit_type) > 0
+
+    def test_trial_id_on_observations(self) -> None:
+        """Every observation must have a non-empty trial_id."""
+        for obs in load_observations():
+            assert isinstance(obs.trial_id, str)
+            assert len(obs.trial_id) > 0
+
+    def test_dose_mg_is_float_or_none(self) -> None:
+        """dose_mg must be a float when present, or None when blank."""
+        for obs in load_observations():
+            assert obs.dose_mg is None or isinstance(obs.dose_mg, float)
+
+    def test_lab_value_is_float_or_none(self) -> None:
+        """lab_value must be a float when present, or None when blank."""
+        for obs in load_observations():
+            assert obs.lab_value is None or isinstance(obs.lab_value, float)
+
+    def test_week4_observations_have_dose_mg(self) -> None:
+        """All WEEK_4 observations must have a dose_mg value (not None)."""
+        week4 = [obs for obs in load_observations() if obs.visit_type == "WEEK_4"]
+        assert len(week4) > 0
+        for obs in week4:
+            assert obs.dose_mg is not None, (
+                f"WEEK_4 observation {obs.observation_id} has no dose_mg"
+            )
+
+    def test_baseline_observations_have_lab_value(self) -> None:
+        """All BASELINE observations must have a lab_value (not None)."""
+        baselines = [obs for obs in load_observations() if obs.visit_type == "BASELINE"]
+        assert len(baselines) > 0
+        for obs in baselines:
+            assert obs.lab_value is not None, (
+                f"BASELINE observation {obs.observation_id} has no lab_value"
+            )
+
+    def test_trial_id_on_sites(self) -> None:
+        """Every site must have a non-empty trial_id."""
+        for site in load_sites():
+            assert isinstance(site.trial_id, str)
+            assert len(site.trial_id) > 0
 
 
 # ---------------------------------------------------------------------------
@@ -221,6 +269,48 @@ class TestLoadProtocolRules:
                 )
                 assert rule.allowed_window is not None, (
                     f"VISIT_WINDOW rule {rule.rule_id} missing allowed_window"
+                )
+
+    def test_eligibility_rules_have_operator_and_field(self) -> None:
+        """ELIGIBILITY rules must carry machine-readable operator and field."""
+        for rule in load_protocol_rules():
+            if rule.rule_type == "ELIGIBILITY":
+                assert rule.operator is not None, (
+                    f"ELIGIBILITY rule {rule.rule_id} missing operator"
+                )
+                assert rule.field is not None, (
+                    f"ELIGIBILITY rule {rule.rule_id} missing field"
+                )
+
+    def test_eligibility_rule_operators_are_ge_or_le(self) -> None:
+        """ELIGIBILITY operators must be '>=' or '<='."""
+        for rule in load_protocol_rules():
+            if rule.rule_type == "ELIGIBILITY":
+                assert rule.operator in (">=", "<="), (
+                    f"ELIGIBILITY rule {rule.rule_id} has unexpected operator '{rule.operator}'"
+                )
+
+    def test_lab_range_rule_has_min_max_and_unit(self) -> None:
+        """LAB_RANGE rules must carry min_value, max_value, and unit."""
+        for rule in load_protocol_rules():
+            if rule.rule_type == "LAB_RANGE":
+                assert rule.min_value is not None, (
+                    f"LAB_RANGE rule {rule.rule_id} missing min_value"
+                )
+                assert rule.max_value is not None, (
+                    f"LAB_RANGE rule {rule.rule_id} missing max_value"
+                )
+                assert rule.unit is not None, (
+                    f"LAB_RANGE rule {rule.rule_id} missing unit"
+                )
+
+    def test_lab_range_min_less_than_max(self) -> None:
+        """LAB_RANGE min_value must be less than max_value."""
+        for rule in load_protocol_rules():
+            if rule.rule_type == "LAB_RANGE":
+                assert rule.min_value < rule.max_value, (  # type: ignore[operator]
+                    f"LAB_RANGE rule {rule.rule_id}: min_value {rule.min_value} "
+                    f">= max_value {rule.max_value}"
                 )
 
     def test_missing_rules_file_raises_file_not_found(self, tmp_path: Path) -> None:

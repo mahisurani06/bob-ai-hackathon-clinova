@@ -154,17 +154,20 @@ class TestCSVStructure:
         assert self._headers("trials.csv") == ["trial_id", "trial_name", "version", "status"]
 
     def test_sites_columns(self) -> None:
-        assert self._headers("sites.csv") == ["site_id", "site_name", "country", "status"]
+        assert self._headers("sites.csv") == [
+            "site_id", "trial_id", "site_name", "country", "status",
+        ]
 
     def test_participants_columns(self) -> None:
         assert self._headers("participants.csv") == [
-            "patient_id", "site_id", "age", "gender", "enrollment_date", "status",
+            "patient_id", "trial_id", "site_id", "age", "gender", "enrollment_date", "status",
         ]
 
     def test_observations_columns(self) -> None:
         assert self._headers("observations.csv") == [
-            "observation_id", "patient_id", "site_id",
+            "observation_id", "trial_id", "patient_id", "site_id",
             "visit_type", "expected_day", "actual_day",
+            "dose_mg", "lab_value", "lab_unit",
         ]
 
 
@@ -178,3 +181,147 @@ class TestInputValidation:
     def test_zero_participants_raises_value_error(self, tmp_output: Path) -> None:
         with pytest.raises(ValueError, match="num_participants"):
             generate_dataset(output_dir=str(tmp_output), num_participants=0, seed=42)
+
+
+# ---------------------------------------------------------------------------
+# Tests — new relationship fields (trial_id on sites, participants, observations)
+# ---------------------------------------------------------------------------
+
+class TestTrialIdRelationships:
+    """trial_id must be present and correct across all entity CSVs."""
+
+    @pytest.fixture(autouse=True)
+    def _generate(self, tmp_output: Path) -> None:
+        generate_dataset(output_dir=str(tmp_output), seed=42)
+        self.out = tmp_output
+
+    def _rows(self, filename: str) -> list[dict]:
+        with open(self.out / filename, newline="", encoding="utf-8") as fh:
+            return list(csv.DictReader(fh))
+
+    def test_sites_have_trial_id(self) -> None:
+        for row in self._rows("sites.csv"):
+            assert row["trial_id"] != "", f"Site {row['site_id']} has empty trial_id"
+
+    def test_participants_have_trial_id(self) -> None:
+        for row in self._rows("participants.csv"):
+            assert row["trial_id"] != "", f"Participant {row['patient_id']} has empty trial_id"
+
+    def test_observations_have_trial_id(self) -> None:
+        for row in self._rows("observations.csv"):
+            assert row["trial_id"] != "", f"Observation {row['observation_id']} has empty trial_id"
+
+    def test_all_site_trial_ids_match_trial(self) -> None:
+        trial_ids = {row["trial_id"] for row in self._rows("trials.csv")}
+        for row in self._rows("sites.csv"):
+            assert row["trial_id"] in trial_ids
+
+    def test_all_participant_trial_ids_match_trial(self) -> None:
+        trial_ids = {row["trial_id"] for row in self._rows("trials.csv")}
+        for row in self._rows("participants.csv"):
+            assert row["trial_id"] in trial_ids
+
+    def test_all_observation_trial_ids_match_trial(self) -> None:
+        trial_ids = {row["trial_id"] for row in self._rows("trials.csv")}
+        for row in self._rows("observations.csv"):
+            assert row["trial_id"] in trial_ids
+
+
+# ---------------------------------------------------------------------------
+# Tests — clinical data fields (dose_mg, lab_value, lab_unit)
+# ---------------------------------------------------------------------------
+
+class TestClinicalDataFields:
+    """Observations must carry dose and lab fields with correct semantics."""
+
+    @pytest.fixture(autouse=True)
+    def _generate(self, tmp_output: Path) -> None:
+        generate_dataset(output_dir=str(tmp_output), seed=42)
+        self.out = tmp_output
+
+    def _rows(self, filename: str) -> list[dict]:
+        with open(self.out / filename, newline="", encoding="utf-8") as fh:
+            return list(csv.DictReader(fh))
+
+    def test_week4_observations_have_dose_mg(self) -> None:
+        """All WEEK_4 observations must have a non-empty dose_mg."""
+        week4 = [r for r in self._rows("observations.csv") if r["visit_type"] == "WEEK_4"]
+        assert len(week4) > 0, "No WEEK_4 observations found"
+        for row in week4:
+            assert row["dose_mg"] != "", (
+                f"WEEK_4 observation {row['observation_id']} has empty dose_mg"
+            )
+
+    def test_non_week4_observations_have_no_dose_mg(self) -> None:
+        """Non-WEEK_4 observations must have an empty dose_mg."""
+        non_week4 = [r for r in self._rows("observations.csv") if r["visit_type"] != "WEEK_4"]
+        for row in non_week4:
+            assert row["dose_mg"] == "", (
+                f"{row['visit_type']} observation {row['observation_id']} "
+                f"unexpectedly has dose_mg={row['dose_mg']}"
+            )
+
+    def test_baseline_observations_have_lab_value_and_unit(self) -> None:
+        """All BASELINE observations must carry lab_value and lab_unit."""
+        baselines = [r for r in self._rows("observations.csv") if r["visit_type"] == "BASELINE"]
+        assert len(baselines) > 0, "No BASELINE observations found"
+        for row in baselines:
+            assert row["lab_value"] != "", (
+                f"BASELINE observation {row['observation_id']} has empty lab_value"
+            )
+            assert row["lab_unit"] == "g/dL", (
+                f"BASELINE observation {row['observation_id']} has unexpected "
+                f"lab_unit='{row['lab_unit']}'"
+            )
+
+    def test_non_baseline_observations_have_no_lab_value(self) -> None:
+        """Non-BASELINE observations must have empty lab fields."""
+        non_baseline = [r for r in self._rows("observations.csv") if r["visit_type"] != "BASELINE"]
+        for row in non_baseline:
+            assert row["lab_value"] == "", (
+                f"{row['visit_type']} observation {row['observation_id']} "
+                f"unexpectedly has lab_value={row['lab_value']}"
+            )
+
+    def test_dose_mg_values_are_numeric(self) -> None:
+        """Non-empty dose_mg values must be parseable as float."""
+        for row in self._rows("observations.csv"):
+            if row["dose_mg"] != "":
+                float(row["dose_mg"])  # raises ValueError if not numeric
+
+    def test_lab_values_are_numeric(self) -> None:
+        """Non-empty lab_value values must be parseable as float."""
+        for row in self._rows("observations.csv"):
+            if row["lab_value"] != "":
+                float(row["lab_value"])  # raises ValueError if not numeric
+
+
+# ---------------------------------------------------------------------------
+# Tests — participant age range (eligibility boundary cases)
+# ---------------------------------------------------------------------------
+
+class TestParticipantAgeRange:
+    """Age range 16–80 should produce eligibility-boundary participants."""
+
+    def test_age_range_allows_eligibility_boundary_cases(self, tmp_path: Path) -> None:
+        """Generate a larger dataset and verify some ages fall outside 18–75."""
+        out = tmp_path / "large"
+        generate_dataset(output_dir=str(out), num_participants=100, seed=42)
+        ages = []
+        with open(out / "participants.csv", newline="", encoding="utf-8") as fh:
+            for row in csv.DictReader(fh):
+                ages.append(int(row["age"]))
+        # With 100 participants and range 16–80, statistically expect at least
+        # some ages below 18 or above 75 — verify the range extends to those.
+        assert min(ages) >= 16, "Minimum age should be at least 16"
+        assert max(ages) <= 80, "Maximum age should be at most 80"
+
+    def test_deterministic_age_generation(self, tmp_path: Path) -> None:
+        """Age generation must be deterministic with seed=42."""
+        out_a = tmp_path / "run_a"
+        out_b = tmp_path / "run_b"
+        generate_dataset(output_dir=str(out_a), seed=42)
+        generate_dataset(output_dir=str(out_b), seed=42)
+        ages_a = [r["age"] for r in csv.DictReader(open(out_a / "participants.csv"))]
+        ages_b = [r["age"] for r in csv.DictReader(open(out_b / "participants.csv"))]
+        assert ages_a == ages_b

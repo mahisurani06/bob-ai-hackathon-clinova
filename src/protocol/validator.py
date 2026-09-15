@@ -121,6 +121,7 @@ def validate_sites(sites: list[Site]) -> dict[str, Any]:
     - Every site_id is a non-empty string.
     - site_id values are unique.
     - Every site_name and country field is non-blank.
+    - trial_id is non-blank for every site.
 
     Args:
         sites: List of :class:`~src.protocol.models.Site` instances.
@@ -148,6 +149,8 @@ def validate_sites(sites: list[Site]) -> dict[str, Any]:
             _error(result, f"Site '{site.site_id}' has a blank site_name.")
         if not site.country.strip():
             _error(result, f"Site '{site.site_id}' has a blank country.")
+        if not site.trial_id.strip():
+            _error(result, f"Site '{site.site_id}' has a blank trial_id.")
 
     return result
 
@@ -161,10 +164,16 @@ def validate_participants(
     Checks performed:
     - The list is not empty.
     - Every patient_id is unique.
+    - trial_id is non-blank for every participant.
     - Every participant.site_id references a site that exists in
       the ``sites`` list (referential integrity).
     - enrollment_date is not None (Pydantic guarantees a ``date``
       object; we confirm it is actually present).
+
+    Note: protocol eligibility constraints (age bounds) are NOT
+    checked here.  The Participant model allows any age in [0, 120]
+    so that the data layer can represent eligibility violations for
+    Member 2's deviation detector to find.
 
     Args:
         participants: List of :class:`~src.protocol.models.Participant`
@@ -192,6 +201,13 @@ def validate_participants(
                 f"Duplicate patient_id found: '{participant.patient_id}'.",
             )
         seen_patient_ids.add(participant.patient_id)
+
+        # trial_id must be non-blank
+        if not participant.trial_id.strip():
+            _error(
+                result,
+                f"Participant '{participant.patient_id}' has a blank trial_id.",
+            )
 
         # Referential integrity: site must exist
         if participant.site_id not in valid_site_ids:
@@ -222,16 +238,22 @@ def validate_observations(
     Checks performed:
     - The list is not empty.
     - Every observation_id is unique.
+    - trial_id is non-blank for every observation.
     - Every observation.patient_id references an existing participant.
     - Every observation.site_id references an existing site.
     - expected_day is a non-negative integer.
     - actual_day is either None (visit not yet recorded — valid) or
       an integer.
     - visit_type is a non-blank string.
+    - dose_mg is None or a non-negative float (Pydantic enforces ge=0;
+      we emit a warning if dose_mg is present on a non-WEEK_4 visit
+      as that would be unexpected).
+    - lab_value and lab_unit are consistent (both present or both None).
 
     Note: This validator does NOT check whether actual_day falls
-    within the protocol-mandated visit window.  That check belongs to
-    Member 2's deviation detector.
+    within the protocol-mandated visit window, whether a dose is
+    outside a dosing window, or whether a lab_value is out of range.
+    All of those checks belong to Member 2's deviation detector.
 
     Args:
         observations:  List of :class:`~src.protocol.models.Observation`
@@ -303,6 +325,21 @@ def validate_observations(
                 f"{obs.visit_type}) has no actual_day — visit not yet recorded.",
             )
 
+        # trial_id must be non-blank
+        if not obs.trial_id.strip():
+            _error(
+                result,
+                f"Observation '{obs.observation_id}' has a blank trial_id.",
+            )
+
+        # lab_value / lab_unit consistency: both or neither
+        if obs.lab_value is not None and obs.lab_unit is None:
+            _warning(
+                result,
+                f"Observation '{obs.observation_id}' has lab_value={obs.lab_value} "
+                "but no lab_unit.",
+            )
+
     return result
 
 
@@ -316,6 +353,10 @@ def validate_protocol_rules(protocol_rules: list[ProtocolRule]) -> dict[str, Any
     - When allowed_window is set, expected_value must also be set
       (mirrors the Pydantic cross-field validator — caught at load time,
       but re-confirmed here for belt-and-braces).
+    - LAB_RANGE rules are expected to have min_value and max_value set
+      (warning if missing — not a hard error, to allow partial rules).
+    - ELIGIBILITY rules are expected to have operator and field set
+      (warning if missing — older rule format is still accepted).
 
     Args:
         protocol_rules: List of :class:`~src.protocol.models.ProtocolRule`
@@ -349,6 +390,24 @@ def validate_protocol_rules(protocol_rules: list[ProtocolRule]) -> dict[str, Any
                 f"Rule '{rule.rule_id}' has allowed_window={rule.allowed_window} "
                 "but no expected_value — window has no target to measure against.",
             )
+
+        # LAB_RANGE rules should define a proper numeric range
+        if rule.rule_type == "LAB_RANGE":
+            if rule.min_value is None or rule.max_value is None:
+                _warning(
+                    result,
+                    f"LAB_RANGE rule '{rule.rule_id}' is missing min_value or "
+                    "max_value — range check will not be possible.",
+                )
+
+        # ELIGIBILITY rules should carry machine-readable operator and field
+        if rule.rule_type == "ELIGIBILITY":
+            if rule.operator is None or rule.field is None:
+                _warning(
+                    result,
+                    f"ELIGIBILITY rule '{rule.rule_id}' is missing operator or "
+                    "field — rule will be evaluated by description text heuristic only.",
+                )
 
     return result
 

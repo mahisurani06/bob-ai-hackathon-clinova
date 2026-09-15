@@ -87,6 +87,9 @@ def load_trials(data_dir: Path | None = None) -> list[Trial]:
 def load_sites(data_dir: Path | None = None) -> list[Site]:
     """Load site records from ``synthetic/sites.csv``.
 
+    ``trial_id`` is stored as a plain string in the CSV; no type
+    conversion is needed beyond what Pydantic performs at parse time.
+
     Args:
         data_dir: Root data directory.  Defaults to ``src/data/``.
 
@@ -121,7 +124,8 @@ def load_participants(data_dir: Path | None = None) -> list[Participant]:
     """
     path = _resolve(data_dir) / "synthetic" / "participants.csv"
     rows = _read_csv(path)
-    # age is read as a string from CSV — cast to int before Pydantic sees it
+    # age is read as a string from CSV — cast to int before Pydantic sees it.
+    # trial_id is a plain string — no conversion needed.
     for row in rows:
         row["age"] = int(row["age"])
     return [Participant(**row) for row in rows]
@@ -151,6 +155,15 @@ def load_observations(data_dir: Path | None = None) -> list[Observation]:
         # actual_day is optional — blank cell → None
         raw_actual = row.get("actual_day", "").strip()
         row["actual_day"] = int(raw_actual) if raw_actual != "" else None
+        # dose_mg is optional — blank cell → None; present → float
+        raw_dose = row.get("dose_mg", "").strip()
+        row["dose_mg"] = float(raw_dose) if raw_dose != "" else None
+        # lab_value is optional — blank cell → None; present → float
+        raw_lab = row.get("lab_value", "").strip()
+        row["lab_value"] = float(raw_lab) if raw_lab != "" else None
+        # lab_unit is optional — blank cell → None
+        raw_unit = row.get("lab_unit", "").strip()
+        row["lab_unit"] = raw_unit if raw_unit != "" else None
     return [Observation(**row) for row in rows]
 
 

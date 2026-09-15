@@ -10,3 +10,10 @@
 # The ordered visit sequence — used as a temporal proxy throughout the system.
 # Earlier index = older visit; later index = more recent visit.
 VISIT_SEQUENCE: list[str] = ["BASELINE", "WEEK_4", "WEEK_8", "WEEK_12"]
+
+# Allowed comparison operators for ProtocolRule.operator.
+# Used by Member 2 to evaluate machine-readable rules without string parsing.
+#   ">="    minimum bound (e.g. age >= 18, lab_value >= min_value)
+#   "<="    maximum bound (e.g. age <= 75, lab_value <= max_value)
+#   "range" inclusive two-sided range (min_value <= value <= max_value)
+RULE_OPERATORS: tuple[str, ...] = (">=", "<=", "range")
