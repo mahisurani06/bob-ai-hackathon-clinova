@@ -1,0 +1,12 @@
+# Streamlit theme configuration for the Clinical Trial Risk Monitor dashboard.
+# Two separate theme blocks — Streamlit will expose a toggle in the top-right
+# hamburger menu letting users switch between them at runtime.
+# Custom HTML components also honour prefers-color-scheme via CSS media queries.
+
+[theme]
+base                     = "light"
+primaryColor             = "#1d4ed8"
+backgroundColor          = "#f1f4f8"
+secondaryBackgroundColor = "#ffffff"
+textColor                = "#1a2332"
+font                     = "sans serif"

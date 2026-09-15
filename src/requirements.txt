@@ -4,5 +4,14 @@
 # Data modelling and validation
 pydantic>=2.0
 
+# Dashboard
+streamlit>=1.32.0
+plotly>=5.20.0
+
+# IBM watsonx.ai SDK — Member 4 AI Advisor & CAPA module
+# Optional: if not installed or credentials absent, the AI module falls
+# back to its deterministic template engine automatically.
+ibm-watsonx-ai>=1.0.0
+
 # Testing
 pytest>=7.0

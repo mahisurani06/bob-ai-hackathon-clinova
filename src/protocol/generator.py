@@ -1,13 +1,14 @@
 """
 generator.py — Synthetic clinical-trial dataset generator.
 
-Generates four CSV files that form a complete, self-consistent demo
-dataset for the Clinical Trial Risk Monitor:
+Generates four CSV files and one JSON schema file that form a complete,
+self-consistent demo dataset for the Clinical Trial Risk Monitor:
 
-    trials.csv        — one registered clinical trial
-    sites.csv         — participating clinical sites
-    participants.csv  — enrolled patients (distributed across sites)
-    observations.csv  — clinical visit records
+    trials.csv                — one registered clinical trial
+    sites.csv                 — participating clinical sites
+    participants.csv          — enrolled patients (distributed across sites)
+    observations.csv          — clinical visit records
+    schemas/protocol_rules.json — protocol rules document (8 rules)
 
 Key design goals:
   - Fully deterministic: the same seed always produces the same data.
@@ -20,6 +21,10 @@ Key design goals:
     deviation detector has something to find.  These records are NOT
     labelled as deviations here — they are ordinary rows with unusual
     actual_day numbers.
+  - Complete: writing protocol_rules.json alongside the CSVs means a
+    single call to generate_dataset() produces a fully loadable dataset.
+    Previously the JSON was only written by the root generate_data.py
+    script, which caused load_project_data() to fail on fresh checkouts.
 
 Usage (command line):
     python -m src.protocol.generator
@@ -32,11 +37,12 @@ Usage (from code):
 from __future__ import annotations
 
 import csv
+import json
 import os
 import random
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 
 # ---------------------------------------------------------------------------
@@ -82,6 +88,82 @@ TRIALS: list[dict] = [
     }
 ]
 
+# ---------------------------------------------------------------------------
+# Static protocol rules — mirrors the rule set expected by the loader and
+# already used by the project (8 rules covering VISIT_WINDOW, ELIGIBILITY,
+# DOSING, and LAB_RANGE).  These are static data; they do not depend on the
+# RNG seed.
+# ---------------------------------------------------------------------------
+
+PROTOCOL_RULES: dict[str, Any] = {
+    "rules": [
+        {
+            "rule_id": "RULE-001",
+            "rule_type": "VISIT_WINDOW",
+            "description": "BASELINE visit must occur within ±3 days of Day 0.",
+            "visit_type": "BASELINE",
+            "expected_value": "0",
+            "allowed_window": 3,
+        },
+        {
+            "rule_id": "RULE-002",
+            "rule_type": "VISIT_WINDOW",
+            "description": "WEEK_4 visit must occur within ±3 days of Day 28.",
+            "visit_type": "WEEK_4",
+            "expected_value": "28",
+            "allowed_window": 3,
+        },
+        {
+            "rule_id": "RULE-003",
+            "rule_type": "VISIT_WINDOW",
+            "description": "WEEK_8 visit must occur within ±3 days of Day 56.",
+            "visit_type": "WEEK_8",
+            "expected_value": "56",
+            "allowed_window": 3,
+        },
+        {
+            "rule_id": "RULE-004",
+            "rule_type": "VISIT_WINDOW",
+            "description": "WEEK_12 visit must occur within ±3 days of Day 84.",
+            "visit_type": "WEEK_12",
+            "expected_value": "84",
+            "allowed_window": 3,
+        },
+        {
+            "rule_id": "RULE-005",
+            "rule_type": "ELIGIBILITY",
+            "description": "Patient must be at least 18 years old at enrollment.",
+            "visit_type": None,
+            "expected_value": "18",
+            "allowed_window": None,
+        },
+        {
+            "rule_id": "RULE-006",
+            "rule_type": "ELIGIBILITY",
+            "description": "Patient must be no older than 75 years old at enrollment.",
+            "visit_type": None,
+            "expected_value": "75",
+            "allowed_window": None,
+        },
+        {
+            "rule_id": "RULE-007",
+            "rule_type": "DOSING",
+            "description": "Study drug must be administered within 2 days of scheduled visit.",
+            "visit_type": "WEEK_4",
+            "expected_value": "28",
+            "allowed_window": 2,
+        },
+        {
+            "rule_id": "RULE-008",
+            "rule_type": "LAB_RANGE",
+            "description": "Hemoglobin must be within normal range at BASELINE.",
+            "visit_type": "BASELINE",
+            "expected_value": "13",
+            "allowed_window": None,
+        },
+    ]
+}
+
 
 # ---------------------------------------------------------------------------
 # Public API
@@ -92,13 +174,24 @@ def generate_dataset(
     num_participants: int = 20,
     seed: int = 42,
 ) -> None:
-    """Generate a complete synthetic clinical-trial dataset as CSV files.
+    """Generate a complete synthetic clinical-trial dataset.
 
-    Creates four CSV files in ``output_dir``:
-        trials.csv, sites.csv, participants.csv, observations.csv
+    Creates four CSV files in ``output_dir`` and writes
+    ``protocol_rules.json`` into a ``schemas/`` directory that sits
+    alongside ``output_dir`` (i.e. ``<parent>/schemas/``).
+
+    File layout produced::
+
+        <output_dir>/
+            trials.csv
+            sites.csv
+            participants.csv
+            observations.csv          ← includes site_id column
+        <output_dir>/../schemas/
+            protocol_rules.json
 
     The dataset is fully deterministic: calling this function twice with
-    the same ``seed`` produces byte-identical CSV files.
+    the same ``seed`` produces byte-identical files.
 
     Args:
         output_dir:       Directory where CSV files will be written.
@@ -117,10 +210,15 @@ def generate_dataset(
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
 
+    # schemas/ lives next to synthetic/ (i.e. one level up from output_dir)
+    schemas_dir = out.parent / "schemas"
+    schemas_dir.mkdir(parents=True, exist_ok=True)
+
     _write_trials(out)
     _write_sites(out)
     participants = _write_participants(out, num_participants, rng)
     _write_observations(out, participants, rng)
+    _write_protocol_rules(schemas_dir)
 
     print(f"[generator] Dataset written to '{out.resolve()}'")
     print(f"[generator]   trials.csv        — {len(TRIALS)} row(s)")
@@ -128,6 +226,7 @@ def generate_dataset(
     print(f"[generator]   participants.csv  — {num_participants} row(s)")
     obs_count = num_participants * len(VISIT_SCHEDULE)
     print(f"[generator]   observations.csv  — {obs_count} row(s)")
+    print(f"[generator]   protocol_rules.json — {len(PROTOCOL_RULES['rules'])} rule(s)")
 
 
 # ---------------------------------------------------------------------------
@@ -276,6 +375,22 @@ def _write_csv(path: Path, fieldnames: list[str], rows: list[dict]) -> None:
         writer = csv.DictWriter(fh, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
+
+
+def _write_protocol_rules(schemas_dir: Path) -> None:
+    """Write ``protocol_rules.json`` to ``schemas_dir``.
+
+    The rules are static (see the ``PROTOCOL_RULES`` module-level constant)
+    so this function always produces the same file regardless of the RNG
+    seed.
+
+    Args:
+        schemas_dir: Directory where ``protocol_rules.json`` will be
+                     written.  Created automatically by the caller.
+    """
+    path = schemas_dir / "protocol_rules.json"
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump(PROTOCOL_RULES, fh, indent=2)
 
 
 # ---------------------------------------------------------------------------
