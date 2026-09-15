@@ -1,0 +1,73 @@
+{
+  "rules": [
+    {
+      "rule_id": "RULE-001",
+      "rule_type": "VISIT_WINDOW",
+      "description": "BASELINE visit must occur within \u00b13 days of Day 0.",
+      "visit_type": "BASELINE",
+      "expected_value": "0",
+      "allowed_window": 3
+    },
+    {
+      "rule_id": "RULE-002",
+      "rule_type": "VISIT_WINDOW",
+      "description": "WEEK_4 visit must occur within \u00b13 days of Day 28.",
+      "visit_type": "WEEK_4",
+      "expected_value": "28",
+      "allowed_window": 3
+    },
+    {
+      "rule_id": "RULE-003",
+      "rule_type": "VISIT_WINDOW",
+      "description": "WEEK_8 visit must occur within \u00b13 days of Day 56.",
+      "visit_type": "WEEK_8",
+      "expected_value": "56",
+      "allowed_window": 3
+    },
+    {
+      "rule_id": "RULE-004",
+      "rule_type": "VISIT_WINDOW",
+      "description": "WEEK_12 visit must occur within \u00b13 days of Day 84.",
+      "visit_type": "WEEK_12",
+      "expected_value": "84",
+      "allowed_window": 3
+    },
+    {
+      "rule_id": "RULE-005",
+      "rule_type": "ELIGIBILITY",
+      "description": "Patient must be at least 18 years old at enrollment.",
+      "field": "age",
+      "operator": ">=",
+      "expected_value": "18",
+      "min_value": 18.0
+    },
+    {
+      "rule_id": "RULE-006",
+      "rule_type": "ELIGIBILITY",
+      "description": "Patient must be no older than 75 years old at enrollment.",
+      "field": "age",
+      "operator": "<=",
+      "expected_value": "75",
+      "max_value": 75.0
+    },
+    {
+      "rule_id": "RULE-007",
+      "rule_type": "DOSING",
+      "description": "Study drug must be administered within 2 days of scheduled visit.",
+      "visit_type": "WEEK_4",
+      "expected_value": "28",
+      "allowed_window": 2
+    },
+    {
+      "rule_id": "RULE-008",
+      "rule_type": "LAB_RANGE",
+      "description": "Hemoglobin must be within normal range (12.0\u201317.5 g/dL) at BASELINE.",
+      "visit_type": "BASELINE",
+      "field": "lab_value",
+      "operator": "range",
+      "min_value": 12.0,
+      "max_value": 17.5,
+      "unit": "g/dL"
+    }
+  ]
+}
