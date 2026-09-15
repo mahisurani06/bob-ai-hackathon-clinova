@@ -1188,7 +1188,6 @@ else:
     if detail.top_risk_drivers:
         driver_rows = ""
         for i, driver in enumerate(detail.top_risk_drivers, start=1):
-            is_major = "major" in driver.lower() and ("major" in driver.lower())
             row_cls  = "driver-row major" if "Major" in driver else "driver-row"
             driver_rows += (
                 f'<div class="{row_cls}">'
