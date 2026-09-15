@@ -11,7 +11,7 @@
 | **Team Name** | **CliNova**                                       |
 | **Track**     | **AI**                                            |
 | **Team Lead** | **Mahi Surani**                                   |
-| **Members**   | **Mahi Surani, Khushi Donda, Ritu Gajera, Nensi** |
+| **Members**   | **Mahi Surani, Khushi Donda, Ritu Gajera, Nensi Shingala** |
 
 ---
 
@@ -257,10 +257,10 @@ The project also uses GitHub Actions to validate the repository automatically.
 
 | **Artifact**        | **Link**                                                   |
 | ------------------- | ---------------------------------------------------------- |
-| 📹 **Demo Video**   | [See `demo/demo-video-link.txt`](demo/demo-video-link.txt) |
-| 🌐 **Live Demo**    | [See `demo/live-demo-url.txt`](demo/live-demo-url.txt)     |
-| 🖼️ **Screenshots** | [See `demo/screenshots/`](demo/screenshots/)               |
-| 📊 **Presentation** | [See `presentation/`](presentation/)                       |
+| 📹 **Demo Video**   | /Users/khushi/Desktop/Khushi/IBM/bob-ai-hackathon-clinova/demo/demo-video-link.txt |
+| 🌐 **Live Demo**    |  /Users/khushi/Desktop/Khushi/IBM/bob-ai-hackathon-clinova/demo/live-demo-url.txt   |
+| 🖼️ **Screenshots** |   /Users/khushi/Desktop/Khushi/IBM/bob-ai-hackathon-clinova/demo/screenshots          |
+| 📊 **Presentation** |   /Users/khushi/Desktop/Khushi/IBM/bob-ai-hackathon-clinova/presentation                    |
 
 ---
 

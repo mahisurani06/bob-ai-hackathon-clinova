@@ -9,51 +9,96 @@
 # =============================================================================
 
 team:
-  name: ""                             # REQUIRED — e.g., "Orion Squad"
-  track: ""                            # REQUIRED — one of: AI | DevOps | Sustainability | Open
+  name: "Clinova"                             # REQUIRED — e.g., "Orion Squad"
+  track: "AI"                            # REQUIRED — one of: AI | DevOps | Sustainability | Open
   lead:
-    name: ""                           # REQUIRED — e.g., "Alice Chen"
-    email: ""                          # REQUIRED — e.g., "alice.chen@ibm.com"
+    name: "Mahi Surani"                           # REQUIRED — e.g., "Alice Chen"
+    email: "24dce141@charusat.edu.in"                          # REQUIRED — e.g., "alice.chen@ibm.com"
   members:
-    - name: ""                         # REQUIRED — Team member 1
-      email: ""
-    - name: ""                         # Add more members by copying the two lines above
-      email: ""
-    - name: ""
-      email: ""
+    - name: "Nensi Shingala"                         # REQUIRED — Team member 1
+      email: "24dce134@charusat.edu.in"
+    - name: "Khushi Donda"                         # Add more members by copying the two lines above
+      email: "24it017@charusat.edu.in"
+    - name: "Ritu Gajera"
+      email: "24it018@charusat.edu.in"
 
 submission:
-  title: ""                            # REQUIRED — Project display name, e.g., "SmartOps Dashboard"
+  title: "Clinical Trial Risk Monitor & Protocol Deviation Detector "                            # REQUIRED — Project display name, e.g., "SmartOps Dashboard"
 
   problem_statement: >                 # REQUIRED — 1-3 sentences. What problem? Who has it?
-    Replace this text with a concise description of the real-world problem
-    your project addresses and who experiences it.
+    A major clinical trial has 5,000+ patient visits across 200+ sites. Protocol deviations  missed visits, wrong dosing, banned co-medications — go undetected until the FDA audit. A single rejected submission delays drug approval by 6–12 months and costs $50–100M. Risk managers need real-time visibility into which sites are highest risk before problems escalate.
 
   solution_summary: >                  # REQUIRED — 1-3 sentences. What did you build?
-    Replace this text with a clear description of your solution
-    and how it addresses the problem above.
+        Bob is an AI-powered clinical trial monitoring platform that compares
+    patient records with clinical trial protocol specifications to identify
+    potential protocol deviations. It detects compliance issues, classifies
+    deviations according to their severity, calculates site-level risk scores
+    using leading indicators, and generates CAPA-ready reports with
+    recommended corrective and preventive actions. The platform helps
+    clinical research teams move from reactive monitoring to proactive
+    risk-based oversight.
 
-  key_features:                        # REQUIRED — List 3 to 5 specific features you implemented
-    - ""                               # e.g., "Real-time pipeline anomaly detection using watsonx.ai"
-    - ""
-    - ""
-    - ""                               # optional 4th
-    - ""                               # optional 5th
+  key_features:
+    - "Protocol rule configuration and automated patient-record comparison"
+    - "Detection of missed visits and visit-window violations"
+    - "Detection of incorrect or missed medication dosing"
+    - "Detection of prohibited or restricted co-medications"
+    - "Deviation classification into major, minor, and administrative categories"
+    - "Site-level risk scoring using deviation frequency, severity, and trends"
+    - "Risk dashboard for monitoring high-risk research sites"
+    - "CAPA-ready reports with corrective and preventive action recommendations"
+    - "Searchable deviation history and audit-oriented reporting"
+    - "Support for synthetic and anonymized clinical trial datasets"
+
 
   tech_stack:
-    languages: []                      # REQUIRED — e.g., ["Python", "TypeScript"]
-    frameworks: []                     # e.g., ["FastAPI", "React"]
-    ibm_technologies: []               # e.g., ["watsonx.ai", "IBM Bob", "IBM Cloud Functions"]
-    databases: []                      # e.g., ["PostgreSQL", "Redis"]
-    other: []                          # e.g., ["Docker", "GitHub Actions", "Slack API"]
+    languages:
+      - "Python"
+      - "JavaScript"
+      - "HTML5"
+      - "CSS3"
+
+    frameworks:
+      - "Flask"
+      - "Bootstrap"
+
+    ai_and_platform:
+      - "IBM Bob"
+
+    databases:
+      - "SQLite"
+
+    libraries_and_tools:
+      - "Pandas"
+      - "NumPy"
+      - "REST API"
+      - "Git and GitHub"
+
+    data_sources:
+      - "Synthetic clinical trial data"
+      - "Anonymized demonstration records"                        # e.g., ["Docker", "GitHub Actions", "Slack API"]
 
   what_we_are_most_proud_of: >         # Optional but recommended — guides judges to your best work
-    Replace with what aspect of the submission you consider strongest
-    and want judges to pay special attention to.
+    We are most proud of Bob's proactive risk intelligence workflow.
+    Instead of only listing individual protocol deviations, the platform
+    connects deviation evidence, severity, recurring patterns, and site-level
+    risk indicators to help clinical research teams prioritize monitoring
+    activities. The CAPA-ready reporting feature converts detected issues
+    into actionable corrective and preventive recommendations, making the
+    system useful for quality management and risk-based clinical trial
+    oversight.
 
   known_limitations: >                 # Optional but recommended — be honest about gaps
-    Replace with any known limitations, incomplete features,
-    or shortcuts taken due to time constraints.
+    The current implementation is a hackathon prototype intended for
+    decision support and demonstration purposes. It has not been validated
+    for direct use in regulated clinical trials. The platform uses synthetic
+    or anonymized data and configurable protocol rules rather than live
+    clinical systems. Deviation severity and risk scores require review by
+    qualified clinical, medical, and quality professionals. Production use
+    would require validated clinical-system integrations, stronger privacy
+    and security controls, role-based access control, complete audit trails,
+    electronic records compliance, formal software validation, and regulatory
+    review.
 
 # =============================================================================
 # ARTIFACT LOCATIONS
@@ -63,7 +108,7 @@ artifacts:
   source_code: "src/"
   setup_guide: "docs/setup-guide.md"
   architecture_doc: "docs/architecture.md"
-  demo_video: "demo/demo-video-link.txt"   # URL to hosted video (YouTube, Loom, Box)
-  live_demo: "demo/live-demo-url.txt"      # URL to deployed demo (optional)
+  demo_video: "/Users/khushi/Desktop/Khushi/IBM/bob-ai-hackathon-clinova/demo/demo-video-link.txt"   # URL to hosted video (YouTube, Loom, Box)
+  live_demo: "/Users/khushi/Desktop/Khushi/IBM/bob-ai-hackathon-clinova/demo/live-demo-url.txt"      # URL to deployed demo (optional)
   screenshots: "demo/screenshots/"
   presentation: "presentation/"
